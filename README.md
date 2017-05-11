@@ -1,9 +1,9 @@
 # rhsm-dbus
 
 A Clojure library for parsing `Type System`.
-It is a format used by `dbusctl` responses.
+It is a data format used by `dbusctl` responses.
 
-The library is used by clojure and java code.
+The library can be used by clojure or java code.
 
 ## Usage
 
