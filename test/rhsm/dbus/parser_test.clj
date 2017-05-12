@@ -2,36 +2,24 @@
   (:require [rhsm.dbus.parser :as dbus]
             [rhsm.dbus.ebnf :as ebnf]
             [instaparse.core :as insta]
-            [clojure.data.zip.xml :as xml]
             [clojure.core.match :refer [match]]
             [clojure.test :refer :all]))
 
-(deftest parse-empty-data-test
-  (->> ""
-       (dbus/parse-data (list))
-       (= [])
+
+(deftest parse-empty-string-test
+  (->> "\"\""
+       dbus/parse-string
+       (= ["" nil])
        is))
 
-(deftest parse-string-data-test
-  (->>  "\"fads\""
-        (dbus/parse-data (list [:TYPE [:BASIC [:STRING]]]))
-        (= ["fasd"])
-        is))
+(deftest parse-empty-string-test
+  (->> "\"\" some result"
+       dbus/parse-string
+       (= ["" "some result"])
+       is))
 
-
-;; ;; (deftest string-test
-;; ;;   (->> "\" hello \""
-;; ;;        dbus/parse-simple-data
-;; ;;        (= [:a])
-;; ;;        is)
-;; ;;   (->> "\" hello \" rest data"
-;; ;;        dbus/parse-simple-data
-;; ;;        (= [:a])
-;; ;;        is))
-
-;; (deftest string-data-test
-;;   (->> "\" hello \""
-;;        (dbus/parse-data [:TYPE_SIGNATURE [:TYPE [:BASIC [:STRING]]]
-;;                          [:TYPE_SIGNATURE]])
-;;        (= "")
-;;        is))
+(deftest parse-string-with-escapes-test
+  (->> "\" a word \\\" hello \" fad "
+       dbus/parse-string
+       (= [" a word \" hello " "fad"])
+       is))
