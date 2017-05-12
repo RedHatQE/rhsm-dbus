@@ -6,69 +6,32 @@
             [clojure.core.match :refer [match]]
             [clojure.test :refer :all]))
 
-(deftest string-type-test
-  (-> "s"
-      dbus/parse-type-signature
-      (= [:TYPE_SIGNATURE [:TYPE [:BASIC [:STRING]]] [:TYPE_SIGNATURE]])
-      is))
+(deftest parse-empty-data-test
+  (->> ""
+       (dbus/parse-data (list))
+       (= [])
+       is))
 
-(deftest integer-type-test
-  (-> "i"
-      dbus/parse-type-signature
-      (= [:TYPE_SIGNATURE [:TYPE [:BASIC [:INTEGER]]] [:TYPE_SIGNATURE]])
-      is))
+(deftest parse-string-data-test
+  (->>  "\"fads\""
+        (dbus/parse-data (list [:TYPE [:BASIC [:STRING]]]))
+        (= ["fasd"])
+        is))
 
-(deftest var-type-test
-  (-> "v"
-      dbus/parse-type-signature
-      (= [:TYPE_SIGNATURE [:TYPE [:VAR]] [:TYPE_SIGNATURE]])
-      is))
 
-(deftest array-hashmap-type-test
-  (-> "a{sv}"
-      dbus/parse-type-signature
-      (= [:TYPE_SIGNATURE
-          [:TYPE [:ARRAY [:ARRAY_ITEM [:HASHMAP [:KEY [:BASIC [:STRING]]]
-                                       [:VALUE [:VAR]]]]]]
-          [:TYPE_SIGNATURE]])
-      is))
+;; ;; (deftest string-test
+;; ;;   (->> "\" hello \""
+;; ;;        dbus/parse-simple-data
+;; ;;        (= [:a])
+;; ;;        is)
+;; ;;   (->> "\" hello \" rest data"
+;; ;;        dbus/parse-simple-data
+;; ;;        (= [:a])
+;; ;;        is))
 
-(deftest array-of-integers-type-test
-  (-> "ai"
-      dbus/parse-type-signature
-      (= [:TYPE_SIGNATURE
-          [:TYPE [:ARRAY [:ARRAY_ITEM [:BASIC [:INTEGER]]]]]
-          [:TYPE_SIGNATURE]])
-      is))
-
-(deftest array-of-strings-type-test
-  (-> "as"
-      dbus/parse-type-signature
-      (= [:TYPE_SIGNATURE
-          [:TYPE [:ARRAY [:ARRAY_ITEM [:BASIC [:STRING]]]]]
-          [:TYPE_SIGNATURE]])
-      is))
-
-(deftest more-types-test
-  (-> "ssiasasaiiiia{si}a{sv}"
-      dbus/parse-type-signature
-      (= [:TYPE_SIGNATURE [:TYPE [:BASIC [:STRING]]]
-          [:TYPE_SIGNATURE [:TYPE [:BASIC [:STRING]]]
-           [:TYPE_SIGNATURE [:TYPE [:BASIC [:INTEGER]]]
-            [:TYPE_SIGNATURE [:TYPE [:ARRAY [:ARRAY_ITEM [:BASIC [:STRING]]]]]
-             [:TYPE_SIGNATURE [:TYPE [:ARRAY [:ARRAY_ITEM [:BASIC [:STRING]]]]]
-              [:TYPE_SIGNATURE [:TYPE [:ARRAY [:ARRAY_ITEM [:BASIC [:INTEGER]]]]]
-               [:TYPE_SIGNATURE [:TYPE [:BASIC [:INTEGER]]]
-                [:TYPE_SIGNATURE [:TYPE [:BASIC [:INTEGER]]]
-                 [:TYPE_SIGNATURE [:TYPE [:BASIC [:INTEGER]]]
-                  [:TYPE_SIGNATURE [:TYPE [:ARRAY
-                                           [:ARRAY_ITEM
-                                            [:HASHMAP [:KEY [:BASIC [:STRING]]]
-                                             [:VALUE [:BASIC [:INTEGER]]]]]]]
-                   [:TYPE_SIGNATURE [:TYPE [:ARRAY
-                                            [:ARRAY_ITEM
-                                             [:HASHMAP [:KEY [:BASIC [:STRING]]]
-                                              [:VALUE [:VAR]]]]]]
-                    [:TYPE_SIGNATURE]]]]]]]]]]]])
-      is))
-
+;; (deftest string-data-test
+;;   (->> "\" hello \""
+;;        (dbus/parse-data [:TYPE_SIGNATURE [:TYPE [:BASIC [:STRING]]]
+;;                          [:TYPE_SIGNATURE]])
+;;        (= "")
+;;        is))

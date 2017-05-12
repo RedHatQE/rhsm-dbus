@@ -13,10 +13,11 @@
   VALUE = BASIC | VAR;
   DELIM = #' +';")
 
-(def data-ebnf "
+(def simple-data-ebnf "
+  SIMPLE_ITEM = STRING | STRING_WITH_ESCAPES | INTEGER | EMPTY_STRING | INTEGER;
   STRING = <'\"'> #'[^\"]+' <'\"'>;
   STRING_WITH_ESCAPES = <'\"'> (#'[^\"\\\\]+' | #'\\\\.' )+ <'\"'>;
-  EMTPY_STRING = <'\"'> <'\"'>;
+  EMPTY_STRING = <'\"'> <'\"'>;
   INTEGER = #'[0-9]+';
   DELIM = #' +';
   REST = #'.*';")

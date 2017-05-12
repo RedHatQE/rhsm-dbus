@@ -9,71 +9,69 @@
 (deftest string-type-test
   (->> "s"
       dbus/parse-type-signature
-      (= [:TYPE_SIGNATURE [:TYPE [:BASIC [:STRING]]] [:TYPE_SIGNATURE]])
-      is)
-  (->> "ss"
-      dbus/parse-type-signature
-      (= [:TYPE_SIGNATURE [:TYPE [:BASIC [:STRING]]]
-          [:TYPE_SIGNATURE [:TYPE [:BASIC [:STRING]]]
-           [:TYPE_SIGNATURE]]])
+      (= (list [:TYPE [:BASIC [:STRING]]]))
       is))
+
+(deftest two-strings-type-test
+  (->> "ss"
+       dbus/parse-type-signature
+       (= (list [:TYPE [:BASIC [:STRING]]]
+                [:TYPE [:BASIC [:STRING]]]))
+       is))
 
 (deftest integer-type-test
   (->> "i"
       dbus/parse-type-signature
-      (= [:TYPE_SIGNATURE [:TYPE [:BASIC [:INTEGER]]] [:TYPE_SIGNATURE]])
+      (= (list [:TYPE [:BASIC [:INTEGER]]]))
       is))
 
 (deftest var-type-test
   (->> "v"
       dbus/parse-type-signature
-      (= [:TYPE_SIGNATURE [:TYPE [:VAR]] [:TYPE_SIGNATURE]])
+      (= (list [:TYPE [:VAR]]))
       is))
 
 (deftest array-hashmap-type-test
   (->> "a{sv}"
       dbus/parse-type-signature
-      (= [:TYPE_SIGNATURE
-          [:TYPE [:ARRAY [:ARRAY_ITEM [:HASHMAP [:KEY [:BASIC [:STRING]]]
-                                       [:VALUE [:VAR]]]]]]
-          [:TYPE_SIGNATURE]])
+      (= (list [:TYPE
+                [:ARRAY
+                 [:ARRAY_ITEM
+                  [:HASHMAP
+                   [:KEY [:BASIC [:STRING]]]
+                   [:VALUE [:VAR]]]]]]))
       is))
 
 (deftest array-of-integers-type-test
   (->> "ai"
       dbus/parse-type-signature
-      (= [:TYPE_SIGNATURE
-          [:TYPE [:ARRAY [:ARRAY_ITEM [:BASIC [:INTEGER]]]]]
-          [:TYPE_SIGNATURE]])
+      (= (list [:TYPE [:ARRAY [:ARRAY_ITEM [:BASIC [:INTEGER]]]]]))
       is))
 
 (deftest array-of-strings-type-test
   (->> "as"
       dbus/parse-type-signature
-      (= [:TYPE_SIGNATURE
-          [:TYPE [:ARRAY [:ARRAY_ITEM [:BASIC [:STRING]]]]]
-          [:TYPE_SIGNATURE]])
+      (= (list [:TYPE [:ARRAY [:ARRAY_ITEM [:BASIC [:STRING]]]]]))
       is))
 
 (deftest more-types-test
   (->> "ssiasasaiiiia{si}a{sv}"
       dbus/parse-type-signature
-      (= [:TYPE_SIGNATURE [:TYPE [:BASIC [:STRING]]]
-          [:TYPE_SIGNATURE [:TYPE [:BASIC [:STRING]]]
-           [:TYPE_SIGNATURE [:TYPE [:BASIC [:INTEGER]]]
-            [:TYPE_SIGNATURE [:TYPE [:ARRAY [:ARRAY_ITEM [:BASIC [:STRING]]]]]
-             [:TYPE_SIGNATURE [:TYPE [:ARRAY [:ARRAY_ITEM [:BASIC [:STRING]]]]]
-              [:TYPE_SIGNATURE [:TYPE [:ARRAY [:ARRAY_ITEM [:BASIC [:INTEGER]]]]]
-               [:TYPE_SIGNATURE [:TYPE [:BASIC [:INTEGER]]]
-                [:TYPE_SIGNATURE [:TYPE [:BASIC [:INTEGER]]]
-                 [:TYPE_SIGNATURE [:TYPE [:BASIC [:INTEGER]]]
-                  [:TYPE_SIGNATURE [:TYPE [:ARRAY
-                                           [:ARRAY_ITEM
-                                            [:HASHMAP [:KEY [:BASIC [:STRING]]]
-                                             [:VALUE [:BASIC [:INTEGER]]]]]]]
-                   [:TYPE_SIGNATURE [:TYPE [:ARRAY
-                                            [:ARRAY_ITEM
-                                             [:HASHMAP [:KEY [:BASIC [:STRING]]]
-                                              [:VALUE [:VAR]]]]]]
-                    [:TYPE_SIGNATURE]]]]]]]]]]]])
+      (= (list [:TYPE [:BASIC [:STRING]]]
+               [:TYPE [:BASIC [:STRING]]]
+               [:TYPE [:BASIC [:INTEGER]]]
+               [:TYPE [:ARRAY [:ARRAY_ITEM [:BASIC [:STRING]]]]]
+               [:TYPE [:ARRAY [:ARRAY_ITEM [:BASIC [:STRING]]]]]
+               [:TYPE [:ARRAY [:ARRAY_ITEM [:BASIC [:INTEGER]]]]]
+               [:TYPE [:BASIC [:INTEGER]]]
+               [:TYPE [:BASIC [:INTEGER]]]
+               [:TYPE [:BASIC [:INTEGER]]]
+               [:TYPE [:ARRAY
+                       [:ARRAY_ITEM
+                        [:HASHMAP [:KEY [:BASIC [:STRING]]]
+                         [:VALUE [:BASIC [:INTEGER]]]]]]]
+               [:TYPE [:ARRAY
+                       [:ARRAY_ITEM
+                        [:HASHMAP [:KEY [:BASIC [:STRING]]]
+                         [:VALUE [:VAR]]]]]]))
       is))
