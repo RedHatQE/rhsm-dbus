@@ -108,3 +108,9 @@
        dbus/parse
        (= [["string" "string two" 10 "string three" 20]  "some rest"])
        is))
+
+(deftest parse-03-test
+  (->> "ssisi \"string\"  \"string two\" 10 \"string three\" 20"
+       dbus/parse
+       (= [["string" "string two" 10 "string three" 20]  ""])
+       is))
