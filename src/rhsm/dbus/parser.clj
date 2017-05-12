@@ -9,22 +9,33 @@
   (str "<TYPE_SIGNATURE> = TYPE TYPE_SIGNATURE | EPSILON"
        ebnf/type-signature-ebnf))
 
-(defparser parse-simple-data
-  (str "DATA = SIMPLE_ITEM REST"
-       ebnf/simple-data-ebnf))
+(defparser string-parser
+  (str "<DATA> = (STRING | EMPTY_STRING) <DELIM> REST" ebnf/simple-data-ebnf))
 
-;; [:TYPE_SIGNATURE [:TYPE [:BASIC [:INTEGER]]] [:TYPE_SIGNATURE]]
-(defn parse-data [ts string]
-  (loop [[label & rest] ts
+(defparser escaped-string-parser
+  (str "<DATA> = STRING <DELIM> REST" ebnf/simple-data-ebnf))
+
+(defn parse-string [input]
+  (let [[result rest] (string-parser input)]
+    (println "result:" result "rest:" rest)
+    (let [[rest-label rest-value] rest]
+      (println "rest-label:" rest-label "rest-value:" rest-value)
+      (match result
+             [:EMPTY_STRING] ["" rest-value]
+             [:STRING _] [(second result) rest-value]
+             :else [nil nil]))))
+
+;; (list [:TYPE [:BASIC [:INTEGER]]]  [:TYPE [:BASIC [:INTEGER]]])
+(defn parse-data [types string]
+  (loop [[type & rest] types
          accumulator []
          string string]
-    (if-not rest ;; the case: [:TYPE_SIGNATURE] - empty signature, end of the recursion
+    (if-not type ;; the case: (list)
       accumulator
-      (let [[type & next-ts] rest]
-        (let [[parsed-value next-string] (match type
-                                                [:TYPE [:BASIC [:STRING]]] (parse-simple-data string)
-                                                :else [[:TYPE_SIGNATURE] ""])]
-          (recur next-ts (conj accumulator "string") next-string))))))
+      (let [[parsed-value next-string] (match type
+                                              [:TYPE [:BASIC [:STRING]]] (parse-string string)
+                                              :else (list))]
+        (recur rest (conj accumulator parsed-value) next-string)))))
 
 ;https://start.fedoraproject.org/; (def object-type-parser
 ;;   (insta/parser object-type-ebnf))
