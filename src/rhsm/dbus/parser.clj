@@ -40,6 +40,63 @@
                            (.trim rest-value)]
              :else [nil nil]))))
 
+(declare parse)
+(declare parse-array)
+
+(defn parsers-for-hashmap [hashmap-type]
+  (let [[_ key-type value-type] hashmap-type]
+    ;;(println "key-type:" key-type "item-type:" value-type)
+    (let [key-parser (match key-type
+                            [:KEY [:BASIC [:STRING]]]  parse-string
+                            [:KEY [:BASIC [:INTEGER]]] parse-integer
+                            [:KEY [:VAR]]              parse)
+          value-parser (match value-type
+                              [:VALUE [:BASIC [:STRING]]]  parse-string
+                              [:VALUE [:BASIC [:INTEGER]]] parse-integer
+                              [:VALUE [:VAR]]              parse
+                              [:VALUE [:ARRAY _]]          (partial parse-array (-> value-type second second)))
+          ]
+      [key-parser value-parser])))
+
+(defn parse-hashmap [type input]
+  ;;(println "parse-hashmap:" type "input:" input)
+  (let [[key-parser value-parser] (parsers-for-hashmap type)
+        [num-of-items rest] (parse-integer input)]
+    ;;(println "num-of-items:" num-of-items "type:" type "string:" input)
+    (loop [ii num-of-items
+           rest rest
+           accumulator {}]
+      ;;(println "\t ii:" ii "string:" rest "accumulator:" accumulator)
+      (if (-> ii (<= 0))
+        [accumulator rest]
+        (let [[parsed-key rest] (key-parser rest)
+              [parsed-value rest] (value-parser rest)]
+          (recur (dec ii) rest (into accumulator {parsed-key parsed-value})))))))
+
+(defn parse-array-data [num-of-items items-type string]
+  (let [parser (match items-type
+                      [:ARRAY_ITEM [:BASIC [:STRING]]]  parse-string
+                      [:ARRAY_ITEM [:BASIC [:INTEGER]]] parse-integer
+                      [:ARRAY_ITEM [:HASHMAP _ _]]        (partial parse-hashmap (-> items-type second))
+                      [:ARRAY_ITEM [:VAR]]              parse)]
+    ;;(println "num-of-items:" num-of-items "items-type:" items-type "string:" string)
+    (loop [ii num-of-items
+           string string
+           accumulator []]
+      ;;(println "\t ii:" ii "string:" string "accumulator:" accumulator)
+      (if (-> ii (<= 0))
+        [accumulator string]
+        (let [[parsed-value next-string] (parser string)]
+          (recur (dec ii) next-string (conj accumulator parsed-value)))))))
+
+;; 3 "string one" "string two" "string three"
+;; 3 s "string one" i 10 s "string two"
+(defn parse-array [items-type input]
+  (let [[result rest] (integer-parser input)
+        num-of-items (-> result second Integer/parseInt)
+        rest-string  (-> rest second (.trim))]
+    (parse-array-data num-of-items items-type (.trim rest-string))))
+
 ;; (list [:TYPE [:BASIC [:INTEGER]]]  [:TYPE [:BASIC [:INTEGER]]])
 (defn parse-data [types string]
   (loop [[type & rest] types
@@ -50,21 +107,21 @@
       (let [[parsed-value next-string] (match type
                                               [:TYPE [:BASIC [:STRING]]]  (parse-string string)
                                               [:TYPE [:BASIC [:INTEGER]]] (parse-integer string)
+                                              [:TYPE [:VAR]]              (parse string)
+                                              [:TYPE [:ARRAY
+                                                      [:ARRAY_ITEM
+                                                       [:HASHMAP _ _]]]] (parse-hashmap
+                                                                          (-> type second second second)
+                                                                          string)
+                                              [:TYPE [:ARRAY _]]          (parse-array
+                                                                           (-> type second second)
+                                                                           string)
                                               :else (list))]
         (recur rest (conj accumulator parsed-value) next-string)))))
 
 (defn parse [string]
   (let [[ts data] (parse-type-signature string)]
-    (parse-data ts (.trim data))))
-
-;; (defn num-of-items-and-rest-of-array [item-type string]
-;;   (let [root (-> (str "DATA = NUM_OF_ITEMS <DELIM> REST; NUM_OF_ITEMS = #'[0-9]+';" data-ebnf)
-;;                  (insta/parser :output-format :enlive)
-;;                  (apply [string])
-;;                  clojure.zip/xml-zip)]
-;;     (let [num-of-items (-> root
-;;                            (xml/xml1-> :DATA :NUM_OF_ITEMS xml/text)
-;;                            Integer/parseInt)
-;;           rest (-> root
-;;                    (xml/xml1-> :DATA :REST xml/text))]
-;;       [num-of-items rest])))
+    (let [[result rest]  (parse-data ts (.trim data))]
+      (if (-> result count (= 1))
+        [(first result) rest]
+        [result rest]))))
