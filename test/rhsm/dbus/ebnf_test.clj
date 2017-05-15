@@ -2,7 +2,6 @@
   (:require [rhsm.dbus.parser :as dbus]
             [rhsm.dbus.ebnf :as ebnf]
             [instaparse.core :as insta]
-            [clojure.data.zip.xml :as xml]
             [clojure.core.match :refer [match]]
             [clojure.test :refer :all]))
 
