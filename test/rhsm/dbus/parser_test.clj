@@ -5,28 +5,42 @@
             [clojure.core.match :refer [match]]
             [clojure.test :refer :all]))
 
-(deftest string-parser-test
-  (->> "\"1111\""
+(deftest string-and-rest-test
+  (->> "\" a word \\\"hello\\\"\" fad"
        dbus/string-parser
-       (= (list [:STRING "1111"] [:REST ""]))
-       is))
-
-(deftest string-parser-test
-  (->> "\"1111\" 11432"
-       dbus/string-parser
-       (= (list [:STRING "1111"] [:REST " 11432"]))
+       (= (list [:STRING
+                 [:NO_DOUBLE_QUOTE " "]
+                 [:NO_DOUBLE_QUOTE "a"]
+                 [:NO_DOUBLE_QUOTE " "]
+                 [:NO_DOUBLE_QUOTE "w"]
+                 [:NO_DOUBLE_QUOTE "o"]
+                 [:NO_DOUBLE_QUOTE "r"]
+                 [:NO_DOUBLE_QUOTE "d"]
+                 [:NO_DOUBLE_QUOTE " "]
+                 [:ESCAPED_DOUBLE_QUOTE
+                  [:BACKSLASH "\\"]
+                  [:DOUBLE_QUOTE "\""]]
+                 [:NO_DOUBLE_QUOTE "h"]
+                 [:NO_DOUBLE_QUOTE "e"]
+                 [:NO_DOUBLE_QUOTE "l"]
+                 [:NO_DOUBLE_QUOTE "l"]
+                 [:NO_DOUBLE_QUOTE "o"]
+                 [:ESCAPED_DOUBLE_QUOTE
+                  [:BACKSLASH "\\"]
+                  [:DOUBLE_QUOTE "\""]]]
+                [:REST " fad"]))
        is))
 
 (deftest string-parser-test
   (->> "\"\""
        dbus/string-parser
-       (= (list [:EMPTY_STRING] [:REST ""]))
+       (= (list [:STRING] [:REST ""]))
        is))
 
 (deftest string-parser-test
   (->> "\"\" some rest"
        dbus/string-parser
-       (= (list [:EMPTY_STRING] [:REST " some rest"]))
+       (= (list [:STRING] [:REST " some rest"]))
        is))
 
 (deftest parse-empty-string-test
@@ -41,11 +55,88 @@
        (= ["" "some result"])
        is))
 
-;; ;; (deftest parse-string-with-escapes-test
-;; ;;   (->> "\" a word \\\" hello \" fad "
-;; ;;        dbus/parse-string
-;; ;;        (= [" a word \" hello "    "fad"])
-;; ;;        is))
+(deftest parse-string-with-double-quotes-test
+  (->> "\"aa čřě\t \\\" \b \n \r \f bb\""
+       dbus/parse-string
+       (= ["aa čřě\t \\\" \b \n \r \f bb" ""])
+       is))
+
+(deftest parse-string-with-double-quotes-and-rest-test
+  (->> "\"aa čřě\t \\\" \b \n \r \f bb\"   some rest"
+       dbus/parse-string
+       (= ["aa čřě\t \\\" \b \n \r \f bb" "some rest"])
+       is))
+
+(deftest parse-empty-string-and-rest-test
+  (->> "\"\"   some rest"
+       dbus/parse-string
+       (= ["" "some rest"])
+       is))
+
+(def string-ebnf
+  "STRING = <DOUBLE_QUOTE> (ESCAPED_DOUBLE_QUOTE / NO_DOUBLE_QUOTE)* <DOUBLE_QUOTE>
+DOUBLE_QUOTE = '\"';
+NO_DOUBLE_QUOTE = #'[^\"]';
+ESCAPED_DOUBLE_QUOTE = BACKSLASH DOUBLE_QUOTE;
+BACKSLASH = '\\\\';
+")
+
+(def string-and-rest-ebnf
+  (str "<S> = STRING REST;
+  REST = #'.*'" string-ebnf))
+
+(defn value [token]
+  (if (-> token first (= :ESCAPED_DOUBLE_QUOTE))
+    "\\\""
+    (-> token second)))
+
+(def string-parser (insta/parser string-ebnf))
+(def string-and-rest-parser (insta/parser string-and-rest-ebnf))
+
+(deftest string-ebnf-test
+  (->> "\"aa čřě\t \\\" \b \n \r \f bb\""
+       string-parser
+       (=  [:STRING
+            [:NO_DOUBLE_QUOTE "a"]
+            [:NO_DOUBLE_QUOTE "a"]
+            [:NO_DOUBLE_QUOTE " "]
+            [:NO_DOUBLE_QUOTE "č"]
+            [:NO_DOUBLE_QUOTE "ř"]
+            [:NO_DOUBLE_QUOTE "ě"]
+            [:NO_DOUBLE_QUOTE "\t"]
+            [:NO_DOUBLE_QUOTE " "]
+            [:ESCAPED_DOUBLE_QUOTE
+             [:BACKSLASH "\\"]
+             [:DOUBLE_QUOTE "\""]]
+            [:NO_DOUBLE_QUOTE " "]
+            [:NO_DOUBLE_QUOTE "\b"]
+            [:NO_DOUBLE_QUOTE " "]
+            [:NO_DOUBLE_QUOTE "\n"]
+            [:NO_DOUBLE_QUOTE " "]
+            [:NO_DOUBLE_QUOTE "\r"]
+            [:NO_DOUBLE_QUOTE " "]
+            [:NO_DOUBLE_QUOTE "\f"]
+            [:NO_DOUBLE_QUOTE " "]
+            [:NO_DOUBLE_QUOTE "b"]
+            [:NO_DOUBLE_QUOTE "b"]])
+       is))
+
+(deftest string-value-test
+  (->> "\"aa čřě\t \\\" \b \n \r \f bb\""
+       string-parser
+       rest
+       (map value)
+       (reduce str)
+       (=  "aa čřě\t \\\" \b \n \r \f bb")
+       is))
+
+(deftest empty-string-test
+  (->> "\"\""
+       string-parser
+       (= [:STRING])
+       is))
+
+
 
 (deftest parse-integer-test
   (->> "1123"
@@ -218,13 +309,6 @@
        (= [{"content" "some content" "status" 300} "some rest"])
        is))
 
-(deftest parse-hashmap-with-definition
-  (->> "a{sv} 2 \"content\" s \"some content\" \"status\" i 300  some rest"
-       dbus/parse
-       (= [{"content" "some content" "status" 300} "some rest"])
-       is))
-
-
 (deftest parse-array-integers-hashmap-with-definition
   (->> "aia{sv} 2 10 20 2 \"content\" s \"some content\" \"status\" i 300  some rest"
        dbus/parse
@@ -236,3 +320,17 @@
        dbus/parse
        (= [[123 [10 20]  {"content" "some content" "status" 300}] "some rest"])
        is))
+
+(deftest parse-hashmap-with-definition
+  (->> "a{sv} 2 \"content\" s \"{some content}\" \"status\" i 300  some rest"
+       dbus/parse
+       (= [{"content" "{some content}" "status" 300} "some rest"])
+       is))
+
+(deftest parse-real-response-from-busctl
+  (let [input (slurp  "resources/aa.txt""resources/dbus-register-simple-response.txt"
+                      )]
+   (->> input
+         dbus/parse
+         (= ["" ""])
+         is)))
