@@ -327,10 +327,31 @@ BACKSLASH = '\\\\';
        (= [{"content" "{some content}" "status" 300} "some rest"])
        is))
 
+(deftest parse-simple-string-from-file
+  (->> "resources/simple.txt"
+       slurp
+       (= "s \"some string\"\n")
+       is))
+
+(deftest rest-with-end-of-line
+  )
+
 (deftest parse-real-response-from-busctl
-  (let [input (slurp  "resources/aa.txt""resources/dbus-register-simple-response.txt"
-                      )]
-   (->> input
+  (let [input (slurp  "resources/dbus-register-simple-response.txt")]
+    (->> input
+         (.trim)
          dbus/parse
-         (= ["" ""])
+         (= [{"content"
+              "{\\\"hypervisorId\\\": null, \\\"serviceLevel\\\": \\\"\\\", \\\"autoheal\\\": true, \\\"owner\\\": {\\\"href\\\": \\\"/owners/admin\\\", \\\"displayName\\\": \\\"Admin Owner\\\", \\\"id\\\": \\\"8a882e355a54cd72015a54cea4fc0003\\\", \\\"key\\\": \\\"admin\\\"}}"
+
+              "status" 200
+              "headers" {"date" "Wed, 03 May 2017 15:48:59 GMT",
+                         "x-version" "2.0.26-1",
+                         "transfer-encoding" "chunked",
+                         "x-candlepin-request-uuid"
+                         "6e295510-5345-42b6-aa6b-64f3eae92e11",
+                         "content-type" "application/json",
+                         "server" "Apache-Coyote/1.1"}
+              }
+             ""])
          is)))
