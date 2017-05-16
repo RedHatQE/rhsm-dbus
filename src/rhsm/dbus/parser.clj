@@ -19,18 +19,19 @@
           (recur  (-> rest second) (conj accumulator ts)))))))
 
 (defparser string-parser
-  (str "<DATA> = (STRING_WITH_ESCAPES | STRING | EMPTY_STRING) REST" ebnf/simple-data-ebnf))
+  (str "<DATA> = STRING REST" ebnf/simple-data-ebnf))
 
 (defparser integer-parser
   (str "<DATA> = INTEGER REST" ebnf/simple-data-ebnf))
 
 (defn parse-string [input]
-  (let [[result rest] (string-parser input)]
-    (let [[rest-label rest-value] rest]
-      (match result
-             [:EMPTY_STRING] ["" (.trim rest-value)]
-             [:STRING _] [(second result) (.trim rest-value)]
-             :else [nil nil]))))
+  (let [[result rest-of-string] (string-parser input)]
+    (let [[rest-label rest-value] rest-of-string
+          value-of-element (fn [el] (if (-> el first (= :ESCAPED_DOUBLE_QUOTE))
+                                     "\\\""
+                                     (-> el second)))]
+      (let [value-of-string (->> result rest (map value-of-element) (reduce str))]
+        [value-of-string (.trim rest-value)]))))
 
 (defn parse-integer [input]
   (let [[result rest] (integer-parser input)]
@@ -48,7 +49,7 @@
     ;;(println "key-type:" key-type "item-type:" value-type)
     (let [key-parser (match key-type
                             [:KEY [:BASIC [:STRING]]]  parse-string
-                            [:KEY [:BASIC [:INTEGER]]] parse-integer
+                            [:KEY [:BASIC [:INTEGER]]] parse-integer 
                             [:KEY [:VAR]]              parse)
           value-parser (match value-type
                               [:VALUE [:BASIC [:STRING]]]  parse-string
