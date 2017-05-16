@@ -14,10 +14,12 @@
   DELIM = #' +';")
 
 (def simple-data-ebnf "
-  SIMPLE_ITEM = STRING | STRING_WITH_ESCAPES | EMPTY_STRING  | INTEGER;
-  STRING = <'\"'> #'[^\"]+' <'\"'>;
-  STRING_WITH_ESCAPES = <'\"'> (#'[^\"\\\\]+' | #'\\.' )+ <'\"'>;
-  EMPTY_STRING = <'\"'> <'\"'>;
+  SIMPLE_ITEM = STRING |  INTEGER;
+  STRING = <DOUBLE_QUOTE> (ESCAPED_DOUBLE_QUOTE / NO_DOUBLE_QUOTE)* <DOUBLE_QUOTE>
+  DOUBLE_QUOTE = '\"';
+  NO_DOUBLE_QUOTE = #'[^\"]';
+  ESCAPED_DOUBLE_QUOTE = BACKSLASH DOUBLE_QUOTE;
+  BACKSLASH = '\\\\';
   INTEGER = #'[0-9]+';
   DELIM = #' +';
   REST = #'.*';")
