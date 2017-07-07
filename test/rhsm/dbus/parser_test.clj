@@ -138,10 +138,16 @@ BACKSLASH = '\\\\';
 
 
 
-(deftest parse-integer-test
-  (->> "1123"
-       dbus/parse-integer
-       (= [1123 ""])
+(deftest parse-boolean-true-test
+  (->> "true"
+       dbus/parse-boolean
+       (= [true ""])
+       is))
+
+(deftest parse-boolean-false-test
+  (->> "false"
+       dbus/parse-boolean
+       (= [false ""])
        is))
 
 (deftest integer-parser-test
@@ -235,6 +241,24 @@ BACKSLASH = '\\\\';
   (->> "ai 10 1 2 3 4 5 6 7 8 9 10"
        dbus/parse
        (= [[1 2 3 4 5 6 7 8 9 10]  ""])
+       is))
+
+(deftest parse-08-test
+  (->> "ab 3 true false false"
+       dbus/parse
+       (= [[true false false]  ""])
+       is))
+
+(deftest parse-09-test
+  (->> "b false"
+       dbus/parse
+       (= [false  ""])
+       is))
+
+(deftest parse-10-test
+  (->> "a{sv} 2 \"first\" b true \"second\" b false "
+       dbus/parse
+       (= [{"first" true "second" false}  ""])
        is))
 
 (deftest parse-array-data-test
@@ -355,3 +379,51 @@ BACKSLASH = '\\\\';
               }
              ""])
          is)))
+
+(def array-of-hashmaps-type "aa{sv}")
+(def array-of-hashmaps-data "2 1 \"name1\" i 1 1 \"name2\" i 2" )
+(def array-of-hashmaps (str array-of-hashmaps-type " " array-of-hashmaps-data))
+(def array-of-hashmaps-type-signature
+  [:TYPE
+   [:ARRAY
+    [:ARRAY_ITEM
+     [:ARRAY
+      [:ARRAY_ITEM
+       [:HASHMAP [:KEY [:BASIC [:STRING]]] [:VALUE [:VAR]]]]]]]])
+
+(deftest parse-array-of-hashmaps-test
+  (let [[value rest] (->> array-of-hashmaps dbus/parse) ]
+    (is (= value [{"name1" 1} {"name2" 2}]))
+    (is (= rest ""))))
+
+(deftest parse-real-array-of-hashmaps-test
+  (let [input (-> "resources/simple-example-of-array-of-hashmaps.txt" slurp)]
+    (let [[value rest] (dbus/parse input)]
+      (is (= rest ""))
+      (is (= value [{"content" "{some content}"
+                     "status" 300}
+                    {"content01" false}])))))
+
+(deftest parse-real-array-of-hashmaps-test
+  (let [input (-> "resources/a-list-of-dicts.txt" slurp)]
+    (let [[result rest] (dbus/parse input)]
+      (is (= rest ""))
+      (let [first-item (first result)]
+        (is (= {"provides_management" false,
+                "status_detail" ["Subscription is current"]
+                "sku" "cores4-multiattr"
+                "system_type" "Physical"
+                "serial" ""
+                "provides" ["Multi-Attribute Limited Product"]
+                "subscription_name" "Multi-Attribute Stackable (4 cores)"
+                "pool_id" ""
+                "service_level" "Premium"
+                "account" "12331131231"
+                "service_type" "Level 3"
+                "contract" "0"
+                "starts" "05/21/17"
+                "subscription_type" ""
+                "active" true
+                "ends" "05/21/18"
+                "quantity_used" 1
+                } first-item))))))
