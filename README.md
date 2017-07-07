@@ -7,6 +7,14 @@ The library can be used by clojure or java code.
 
 ## Usage
 
+```clojure
+(require '[rhsm.dbus :as dbus])
+(let [[values rest-string] (dbus/parse "a{sv} 2 \"first\" i 10 \"second\" b false")]
+  (is (= "" rest))
+  (is (= {"first" 10
+          "second" false})))
+```
+
 You can see examples of usage in [the project's unittests].
 
 ## License

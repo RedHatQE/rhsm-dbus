@@ -1,4 +1,4 @@
-(defproject com.redhat.qe/rhsm-dbus "0.9.0-SNAPSHOT"
+(defproject com.redhat.qe/rhsm-dbus "0.9.1-SNAPSHOT"
   :description "DBUS Type System parser for clojure and java"
   :url ""
   :license {:name "Eclipse Public License"
