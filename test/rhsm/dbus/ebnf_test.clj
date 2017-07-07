@@ -48,9 +48,15 @@
 
 (deftest integer-type-test
   (->> "i"
-      dbus/parse-type-signature
-      (= [(list [:TYPE [:BASIC [:INTEGER]]]) ""])
-      is))
+       dbus/parse-type-signature
+       (= [(list [:TYPE [:BASIC [:INTEGER]]]) ""])
+       is))
+
+(deftest boolean-type-test
+  (->> "b"
+       dbus/parse-type-signature
+       (= [(list [:TYPE [:BASIC [:BOOLEAN]]]) ""])
+       is))
 
 (deftest var-type-test
   (->> "v"
@@ -81,8 +87,21 @@
       (= [(list [:TYPE [:ARRAY [:ARRAY_ITEM [:BASIC [:STRING]]]]]) ""])
       is))
 
+(deftest array-of-hashmaps-test
+  (->> "aa{sv}"
+       dbus/parse-type-signature
+       (= [(list [:TYPE
+                  [:ARRAY
+                   [:ARRAY_ITEM
+                    [:ARRAY
+                     [:ARRAY_ITEM
+                      [:HASHMAP
+                       [:KEY [:BASIC [:STRING]]]
+                       [:VALUE [:VAR]]]]]]]]) ""])
+       is))
+
 (deftest more-types-test
-  (->> "ssiasasaiiiia{si}a{sv}"
+  (->> "ssiasasaiiiba{si}a{sv}"
       dbus/parse-type-signature
       (= [(list [:TYPE [:BASIC [:STRING]]]
                 [:TYPE [:BASIC [:STRING]]]
@@ -92,7 +111,7 @@
                 [:TYPE [:ARRAY [:ARRAY_ITEM [:BASIC [:INTEGER]]]]]
                 [:TYPE [:BASIC [:INTEGER]]]
                 [:TYPE [:BASIC [:INTEGER]]]
-                [:TYPE [:BASIC [:INTEGER]]]
+                [:TYPE [:BASIC [:BOOLEAN]]]
                 [:TYPE [:ARRAY
                         [:ARRAY_ITEM
                          [:HASHMAP [:KEY [:BASIC [:STRING]]]
