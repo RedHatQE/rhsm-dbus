@@ -12,7 +12,7 @@ The library can be used by clojure or java code.
 (let [[values rest] (dbus/parse "a{sv} 2 \"first\" i 10 \"second\" b false")]
   (is (= "" rest))
   (is (= {"first" 10
-          "second" false})))
+          "second" false} values)))
 ```
 
 You can see examples of usage in [the project's unittests].
